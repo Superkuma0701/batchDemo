@@ -1,5 +1,7 @@
 package com.git.batchdemo.config;
 
+import com.git.batchdemo.listener.FirstJobListener;
+import com.git.batchdemo.listener.FirstStepListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -21,14 +23,19 @@ public class firstJob {
 
     private final PlatformTransactionManager transactionManager;
 
+    private final FirstJobListener firstJobListener;
+
+    private final FirstStepListener firstStepListener;
+
 
 
 
     @Autowired
-    public firstJob(JobRepository jobRepository, PlatformTransactionManager transactionManager ){
+    public firstJob(JobRepository jobRepository, PlatformTransactionManager transactionManager , FirstJobListener firstJobListener , FirstStepListener firstStepListener){
         this.jobRepository = jobRepository;
         this.transactionManager = transactionManager;
-
+        this.firstJobListener = firstJobListener;
+        this.firstStepListener = firstStepListener;
     }
 
     @Bean
@@ -36,6 +43,7 @@ public class firstJob {
         return new JobBuilder("job", jobRepository)
                 .start(firstStep())
                 .incrementer(new RunIdIncrementer())
+                .listener(firstJobListener)
                 .build();
     }
 
@@ -43,6 +51,7 @@ public class firstJob {
     public Step firstStep(){
         return new StepBuilder("step", jobRepository)
                 .tasklet(firstTasklst(), transactionManager)
+                .listener(firstStepListener)
                 .build();
     }
 
