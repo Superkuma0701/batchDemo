@@ -2,6 +2,9 @@ package com.git.batchdemo.config;
 
 import com.git.batchdemo.listener.FirstJobListener;
 import com.git.batchdemo.listener.FirstStepListener;
+import com.git.batchdemo.processor.FirstItemProcessor;
+import com.git.batchdemo.reader.FirstItemReader;
+import com.git.batchdemo.writer.FirstItemWriter;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,18 +30,28 @@ public class firstJob {
 
     private final FirstStepListener firstStepListener;
 
+    private final FirstItemReader firstItemReader;
+
+    private final FirstItemWriter firstItemWriter;
+
+    private final FirstItemProcessor firstItemProcessor;
+
 
 
 
     @Autowired
-    public firstJob(JobRepository jobRepository, PlatformTransactionManager transactionManager , FirstJobListener firstJobListener , FirstStepListener firstStepListener){
+    public firstJob(JobRepository jobRepository, PlatformTransactionManager transactionManager , FirstJobListener firstJobListener , FirstStepListener firstStepListener
+    , FirstItemReader firstItemReader, FirstItemWriter firstItemWriter , FirstItemProcessor firstItemProcessor){
         this.jobRepository = jobRepository;
         this.transactionManager = transactionManager;
         this.firstJobListener = firstJobListener;
         this.firstStepListener = firstStepListener;
+        this.firstItemReader = firstItemReader;
+        this.firstItemWriter = firstItemWriter;
+        this.firstItemProcessor = firstItemProcessor;
     }
 
-    @Bean
+    //@Bean
     public Job firstJobtest(){
         return new JobBuilder("job", jobRepository)
                 .start(firstStep())
@@ -47,7 +60,7 @@ public class firstJob {
                 .build();
     }
 
-    @Bean
+    //@Bean
     public Step firstStep(){
         return new StepBuilder("step", jobRepository)
                 .tasklet(firstTasklst(), transactionManager)
@@ -55,12 +68,32 @@ public class firstJob {
                 .build();
     }
 
-    @Bean
+    //@Bean
     public Tasklet firstTasklst(){
         return (contribution, chunkContext) -> {
             System.out.println("Hello, Spring Batch!");
             return RepeatStatus.FINISHED;
         };
+    }
+
+
+    //CHUNK ORIENTED
+    @Bean
+    public Job secondJob(){
+        return new JobBuilder("second job" , jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .start(secondStep())
+                .build();
+    }
+
+    @Bean
+    public Step secondStep(){
+        return new StepBuilder("second step", jobRepository)
+                .<Integer , Long>chunk(3,transactionManager)
+                .reader(firstItemReader)
+                .processor(firstItemProcessor)
+                .writer(firstItemWriter)
+                .build();
     }
 
 }
